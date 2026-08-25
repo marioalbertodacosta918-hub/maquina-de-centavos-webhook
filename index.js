@@ -1,3 +1,4 @@
+
 const express = require("express");
 
 const app = express();
@@ -7,42 +8,45 @@ app.use(express.json());
 app.post("/webhook", async (req, res) => {
   console.log("Webhook recebido:", req.body);
 
-  // Responde rapidamente ao Mercado Pago
-  res.status(200).json({
-    received: true
-  });
-
   try {
     const paymentId = req.body?.data?.id;
 
     if (!paymentId) {
       console.log("Notificação sem ID de pagamento.");
-      return;
+      return res.status(200).json({ received: true });
     }
 
     const accessToken = process.env.MP_ACCESS_TOKEN;
 
     if (!accessToken) {
       console.error("MP_ACCESS_TOKEN não configurada.");
-      return;
+      return res.status(500).json({ received: false });
     }
 
     const response = await fetch(
       `https://api.mercadopago.com/v1/payments/${paymentId}`,
       {
+        method: "GET",
         headers: {
-          Authorization: `Bearer ${accessToken}`
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json"
         }
       }
     );
 
     if (!response.ok) {
+      const errorText = await response.text();
+
       console.error(
         "Erro ao consultar pagamento:",
         response.status,
-        await response.text()
+        errorText
       );
-      return;
+
+      return res.status(200).json({
+        received: true,
+        payment_checked: false
+      });
     }
 
     const payment = await response.json();
@@ -58,15 +62,24 @@ app.post("/webhook", async (req, res) => {
       Number(payment.transaction_amount) === 19.90
     ) {
       console.log("PAGAMENTO APROVADO - R$ 19,90");
-      
-      // Aqui será colocada a ação da Máquina de Centavos.
+
+      // Aqui vamos colocar a ação da Máquina de Centavos.
     } else {
       console.log(
         "Pagamento não aprovado ou valor diferente de R$ 19,90."
       );
     }
+
+    return res.status(200).json({
+      received: true
+    });
+
   } catch (error) {
     console.error("Erro no processamento:", error);
+
+    return res.status(200).json({
+      received: true
+    });
   }
 });
 
