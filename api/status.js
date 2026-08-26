@@ -9,55 +9,54 @@ export default async function handler(req, res) {
       });
     }
 
-    // Busca os pagamentos recentes aprovados
+    /*
+     * Consulta os pagamentos recentes do Mercado Pago
+     * e procura o último pagamento aprovado de R$ 19,90.
+     */
+
     const response = await fetch(
       "https://api.mercadopago.com/v1/payments/search?sort=date_created&criteria=desc&limit=10",
       {
         method: "GET",
         headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json"
+          Authorization: `Bearer ${accessToken}`
         }
       }
     );
 
-    const dados = await response.json();
+    const data = await response.json();
 
     if (!response.ok) {
       return res.status(response.status).json({
         aprovado: false,
-        erro: dados
+        erro: data
       });
     }
 
-    const pagamentos = dados.results || [];
+    const pagamentos = data.results || [];
 
-    // Procura o pagamento aprovado de R$ 19,90
-    const pagamento = pagamentos.find((p) => {
-      return (
-        p.status === "approved" &&
-        Number(p.transaction_amount) === 19.90
-      );
-    });
+    const pagamentoAprovado = pagamentos.find(
+      (pagamento) =>
+        pagamento.status === "approved" &&
+        Number(pagamento.transaction_amount) === 19.90
+    );
 
-    if (pagamento) {
+    if (!pagamentoAprovado) {
       return res.status(200).json({
-        aprovado: true,
-        pagamento: {
-          id: String(pagamento.id),
-          valor: Number(pagamento.transaction_amount),
-          status: pagamento.status
-        }
+        aprovado: false
       });
     }
 
     return res.status(200).json({
-      aprovado: false
+      aprovado: true,
+      pagamento: {
+        id: String(pagamentoAprovado.id),
+        valor: Number(pagamentoAprovado.transaction_amount),
+        status: pagamentoAprovado.status
+      }
     });
 
   } catch (error) {
-    console.error("Erro:", error);
-
     return res.status(500).json({
       aprovado: false,
       erro: error.message
