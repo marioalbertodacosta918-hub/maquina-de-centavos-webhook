@@ -23,6 +23,15 @@ export default async function handler(req, res) {
               unit_price: 19.90
             }
           ],
+
+          back_urls: {
+            success: "https://maquina-de-centavos-webhook.vercel.app/sucesso",
+            failure: "https://maquina-de-centavos-webhook.vercel.app/erro",
+            pending: "https://maquina-de-centavos-webhook.vercel.app/pendente"
+          },
+
+          auto_return: "approved",
+
           notification_url:
             "https://maquina-de-centavos-webhook.vercel.app/webhook"
         })
