@@ -1,5 +1,5 @@
 export default async function handler(req, res) {
-  if (req.method !== "GET" && req.method !== "POST") {
+  if (req.method !== "GET") {
     return res.status(405).json({
       error: "Método não permitido"
     });
@@ -31,7 +31,12 @@ export default async function handler(req, res) {
 
     const data = await response.json();
 
-    return res.status(response.status).json(data);
+    if (!response.ok) {
+      return res.status(response.status).json(data);
+    }
+
+    return res.redirect(302, data.init_point);
+
   } catch (error) {
     return res.status(500).json({
       error: "Erro ao criar preferência",
