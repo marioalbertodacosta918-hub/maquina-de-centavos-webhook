@@ -1,9 +1,11 @@
-
 const express = require("express");
 
 const app = express();
 
 app.use(express.json());
+
+// Guarda o último pagamento recebido
+let ultimoPagamento = null;
 
 app.post("/webhook", async (req, res) => {
   console.log("Webhook recebido:", req.body);
@@ -11,13 +13,14 @@ app.post("/webhook", async (req, res) => {
   const paymentId = req.body?.data?.id;
 
   if (!paymentId) {
-    return res.status(200).json({ received: true });
+    return res.status(200).json({
+      received: true
+    });
   }
 
-  // O simulador do Mercado Pago usa IDs fictícios,
-  // como 123456. Não devemos consultar esse ID na API.
   if (String(paymentId) === "123456") {
     console.log("Simulação recebida com sucesso.");
+
     return res.status(200).json({
       received: true,
       simulation: true
@@ -29,7 +32,10 @@ app.post("/webhook", async (req, res) => {
 
     if (!accessToken) {
       console.error("MP_ACCESS_TOKEN não configurada.");
-      return res.status(500).json({ received: false });
+
+      return res.status(500).json({
+        received: false
+      });
     }
 
     const response = await fetch(
@@ -50,7 +56,9 @@ app.post("/webhook", async (req, res) => {
         errorText
       );
 
-      return res.status(200).json({ received: true });
+      return res.status(200).json({
+        received: true
+      });
     }
 
     const payment = await response.json();
@@ -67,7 +75,12 @@ app.post("/webhook", async (req, res) => {
     ) {
       console.log("PAGAMENTO APROVADO - R$ 19,90");
 
-      // Aqui entra a ação da Máquina de Centavos.
+      // Guarda o pagamento aprovado
+      ultimoPagamento = {
+        id: String(payment.id),
+        valor: Number(payment.transaction_amount),
+        status: "aprovado"
+      };
     }
 
     return res.status(200).json({
@@ -75,12 +88,30 @@ app.post("/webhook", async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Erro no processamento:", error);
+    console.error(
+      "Erro no processamento:",
+      error
+    );
 
     return res.status(200).json({
       received: true
     });
   }
+});
+
+app.get("/status", (req, res) => {
+
+  if (!ultimoPagamento) {
+    return res.status(200).json({
+      aprovado: false
+    });
+  }
+
+  return res.status(200).json({
+    aprovado: true,
+    pagamento: ultimoPagamento
+  });
+
 });
 
 app.get("/", (req, res) => {
