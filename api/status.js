@@ -9,54 +9,55 @@ export default async function handler(req, res) {
       });
     }
 
-    // ID do último pagamento recebido pelo webhook
-    const paymentId = process.env.ULTIMO_PAGAMENTO_ID;
-
-    if (!paymentId) {
-      return res.status(200).json({
-        aprovado: false,
-        mensagem: "Nenhum pagamento recebido ainda"
-      });
-    }
-
+    // Busca os pagamentos recentes aprovados
     const response = await fetch(
-      `https://api.mercadopago.com/v1/payments/${paymentId}`,
+      "https://api.mercadopago.com/v1/payments/search?sort=date_created&criteria=desc&limit=10",
       {
+        method: "GET",
         headers: {
-          Authorization: `Bearer ${accessToken}`
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json"
         }
       }
     );
 
-    const payment = await response.json();
+    const dados = await response.json();
 
     if (!response.ok) {
-      return res.status(200).json({
+      return res.status(response.status).json({
         aprovado: false,
-        erro: payment
+        erro: dados
       });
     }
 
-    if (
-      payment.status === "approved" &&
-      Number(payment.transaction_amount) === 19.90
-    ) {
+    const pagamentos = dados.results || [];
+
+    // Procura o pagamento aprovado de R$ 19,90
+    const pagamento = pagamentos.find((p) => {
+      return (
+        p.status === "approved" &&
+        Number(p.transaction_amount) === 19.90
+      );
+    });
+
+    if (pagamento) {
       return res.status(200).json({
         aprovado: true,
         pagamento: {
-          id: String(payment.id),
-          valor: Number(payment.transaction_amount),
-          status: "aprovado"
+          id: String(pagamento.id),
+          valor: Number(pagamento.transaction_amount),
+          status: pagamento.status
         }
       });
     }
 
     return res.status(200).json({
-      aprovado: false,
-      status: payment.status
+      aprovado: false
     });
 
   } catch (error) {
+    console.error("Erro:", error);
+
     return res.status(500).json({
       aprovado: false,
       erro: error.message
