@@ -1,4 +1,3 @@
-
 export default async function handler(req, res) {
   try {
     const accessToken = process.env.MP_ACCESS_TOKEN;
@@ -10,7 +9,15 @@ export default async function handler(req, res) {
       });
     }
 
-    const paymentId = "174814588471";
+    // ID do último pagamento recebido pelo webhook
+    const paymentId = process.env.ULTIMO_PAGAMENTO_ID;
+
+    if (!paymentId) {
+      return res.status(200).json({
+        aprovado: false,
+        mensagem: "Nenhum pagamento recebido ainda"
+      });
+    }
 
     const response = await fetch(
       `https://api.mercadopago.com/v1/payments/${paymentId}`,
@@ -24,7 +31,7 @@ export default async function handler(req, res) {
     const payment = await response.json();
 
     if (!response.ok) {
-      return res.status(response.status).json({
+      return res.status(200).json({
         aprovado: false,
         erro: payment
       });
@@ -39,7 +46,7 @@ export default async function handler(req, res) {
         pagamento: {
           id: String(payment.id),
           valor: Number(payment.transaction_amount),
-          status: payment.status
+          status: "aprovado"
         }
       });
     }
