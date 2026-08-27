@@ -4,15 +4,12 @@ export default async function handler(req, res) {
 
     if (!token) {
       return res.status(500).json({
-        aprovado: false,
         erro: "MP_ACCESS_TOKEN não configurado"
       });
     }
 
-    const paymentId = "174912356395";
-
     const response = await fetch(
-      `https://api.mercadopago.com/v1/payments/${paymentId}`,
+      "https://api.mercadopago.com/users/me",
       {
         method: "GET",
         headers: {
@@ -21,28 +18,19 @@ export default async function handler(req, res) {
       }
     );
 
-    const pagamento = await response.json();
+    const data = await response.json();
 
-    if (!response.ok) {
-      return res.status(response.status).json({
-        aprovado: false,
-        erro: pagamento
-      });
-    }
-
-    return res.status(200).json({
-      aprovado: pagamento.status === "approved",
-      pagamento: {
-        id: String(pagamento.id),
-        status: pagamento.status,
-        status_detail: pagamento.status_detail,
-        valor: Number(pagamento.transaction_amount)
-      }
+    return res.status(response.status).json({
+      ok: response.ok,
+      id: data.id || null,
+      nickname: data.nickname || null,
+      email: data.email || null,
+      error: data.error || null,
+      message: data.message || null
     });
 
   } catch (error) {
     return res.status(500).json({
-      aprovado: false,
       erro: error.message
     });
   }
