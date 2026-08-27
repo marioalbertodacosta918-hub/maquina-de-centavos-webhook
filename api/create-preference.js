@@ -1,33 +1,45 @@
 export default async function handler(req, res) {
-  if (req.method !== "GET" && req.method !== "POST") {
-    return res.status(405).json({
-      error: "Método não permitido"
-    });
-  }
-
   try {
-    const response = await fetch(
+    const token = process.env.MP_ACCESS_TOKEN;
+
+    if (!token) {
+      return res.status(500).json({
+        erro: "MP_ACCESS_TOKEN não configurado"
+      });
+    }
+
+    const resposta = await fetch(
       "https://api.mercadopago.com/checkout/preferences",
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${process.env.MP_ACCESS_TOKEN}`
+          "Authorization": `Bearer ${token}`
         },
         body: JSON.stringify({
           items: [
             {
+              id: "maquina-centavos-1990",
               title: "Máquina de Centavos",
+              description: "Produto digital Máquina de Centavos",
               quantity: 1,
               currency_id: "BRL",
               unit_price: 19.90
             }
           ],
 
+          external_reference:
+            "maquina-centavos-" + Date.now(),
+
           back_urls: {
-            success: "https://maquina-de-centavos-webhook.vercel.app/sucesso",
-            failure: "https://maquina-de-centavos-webhook.vercel.app/erro",
-            pending: "https://maquina-de-centavos-webhook.vercel.app/pendente"
+            success:
+              "https://maquina-de-centavos-webhook.vercel.app/sucesso",
+
+            failure:
+              "https://maquina-de-centavos-webhook.vercel.app/erro",
+
+            pending:
+              "https://maquina-de-centavos-webhook.vercel.app/pendente"
           },
 
           auto_return: "approved",
@@ -38,18 +50,28 @@ export default async function handler(req, res) {
       }
     );
 
-    const data = await response.json();
+    const dados = await resposta.json();
 
-    if (!response.ok) {
-      return res.status(response.status).json(data);
+    if (!resposta.ok) {
+      return res.status(resposta.status).json({
+        erro: "Mercado Pago recusou a criação da preferência",
+        detalhes: dados
+      });
     }
 
-    return res.redirect(302, data.init_point);
+    if (!dados.init_point) {
+      return res.status(500).json({
+        erro: "Mercado Pago não retornou o link de pagamento",
+        resposta: dados
+      });
+    }
 
-  } catch (error) {
+    return res.redirect(302, dados.init_point);
+
+  } catch (erro) {
     return res.status(500).json({
-      error: "Erro ao criar preferência",
-      details: error.message
+      erro: "Erro ao criar preferência",
+      detalhes: erro.message
     });
   }
 }
