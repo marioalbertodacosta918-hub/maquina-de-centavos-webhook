@@ -8,6 +8,9 @@ export default async function handler(req, res) {
       });
     }
 
+    // Identificador único desta compra
+    const referencia = "maquina-centavos-" + Date.now();
+
     const resposta = await fetch(
       "https://api.mercadopago.com/checkout/preferences",
       {
@@ -28,8 +31,7 @@ export default async function handler(req, res) {
             }
           ],
 
-          external_reference:
-            "maquina-centavos-" + Date.now(),
+          external_reference: referencia,
 
           back_urls: {
             success:
