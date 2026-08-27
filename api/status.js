@@ -1,41 +1,48 @@
-
 export default async function handler(req, res) {
   try {
-    const accessToken = process.env.MP_ACCESS_TOKEN;
+    const token = process.env.MP_ACCESS_TOKEN;
 
-    if (!accessToken) {
+    if (!token) {
       return res.status(500).json({
-        erro: "MP_ACCESS_TOKEN não configurada"
+        aprovado: false,
+        erro: "MP_ACCESS_TOKEN não configurado"
       });
     }
 
+    const paymentId = "174912356395";
+
     const response = await fetch(
-      "https://api.mercadopago.com/v1/payments/search?sort=date_created&criteria=desc&limit=10",
+      `https://api.mercadopago.com/v1/payments/${paymentId}`,
       {
+        method: "GET",
         headers: {
-          Authorization: `Bearer ${accessToken}`
+          Authorization: `Bearer ${token}`
         }
       }
     );
 
-    const data = await response.json();
+    const pagamento = await response.json();
 
-    return res.status(response.status).json({
-      ok: response.ok,
-      quantidade: data.results?.length || 0,
-      pagamentos: (data.results || []).map(p => ({
-        id: String(p.id),
-        status: p.status,
-        valor: Number(p.transaction_amount),
-        data: p.date_created,
-        status_detail: p.status_detail
-      })),
-      erro: data.error || null,
-      mensagem: data.message || null
+    if (!response.ok) {
+      return res.status(response.status).json({
+        aprovado: false,
+        erro: pagamento
+      });
+    }
+
+    return res.status(200).json({
+      aprovado: pagamento.status === "approved",
+      pagamento: {
+        id: String(pagamento.id),
+        status: pagamento.status,
+        status_detail: pagamento.status_detail,
+        valor: Number(pagamento.transaction_amount)
+      }
     });
 
   } catch (error) {
     return res.status(500).json({
+      aprovado: false,
       erro: error.message
     });
   }
