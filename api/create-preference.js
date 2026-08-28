@@ -8,17 +8,18 @@ export default async function handler(req, res) {
       });
     }
 
-    // Identificador único desta compra
     const referencia = "maquina-centavos-" + Date.now();
 
     const resposta = await fetch(
       "https://api.mercadopago.com/checkout/preferences",
       {
         method: "POST",
+
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`
         },
+
         body: JSON.stringify({
           items: [
             {
@@ -35,13 +36,13 @@ export default async function handler(req, res) {
 
           back_urls: {
             success:
-              "https://maquina-de-centavos-webhook.vercel.app/sucesso",
+              "https://maquina-de-centavos-webhook.vercel.app/",
 
             failure:
-              "https://maquina-de-centavos-webhook.vercel.app/erro",
+              "https://maquina-de-centavos-webhook.vercel.app/",
 
             pending:
-              "https://maquina-de-centavos-webhook.vercel.app/pendente"
+              "https://maquina-de-centavos-webhook.vercel.app/"
           },
 
           auto_return: "approved",
@@ -77,3 +78,4 @@ export default async function handler(req, res) {
     });
   }
 }
+
