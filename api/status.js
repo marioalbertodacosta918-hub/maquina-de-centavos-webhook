@@ -1,37 +1,59 @@
 export default async function handler(req, res) {
-  const token = process.env.MP_ACCESS_TOKEN;
-
-  if (!token) {
-    return res.status(500).json({
-      erro: "MP_ACCESS_TOKEN não configurado"
-    });
-  }
-
   try {
-    const response = await fetch(
-      "https://api.mercadopago.com/users/me",
+    const token = process.env.MP_ACCESS_TOKEN;
+
+    if (!token) {
+      return res.status(500).json({
+        aprovado: false,
+        erro: "MP_ACCESS_TOKEN não configurado"
+      });
+    }
+
+    const paymentId = req.query.id;
+
+    if (!paymentId) {
+      return res.status(400).json({
+        aprovado: false,
+        erro: "Informe o ID do pagamento"
+      });
+    }
+
+    const resposta = await fetch(
+      `https://api.mercadopago.com/v1/payments/${paymentId}`,
       {
+        method: "GET",
         headers: {
-          Authorization: `Bearer ${token}`
+          "Authorization": `Bearer ${token}`
         }
       }
     );
 
-    const data = await response.json();
+    const dados = await resposta.json();
 
-    return res.status(response.status).json({
-      teste: "CONTA_PRODUCAO",
-      ok: response.ok,
-      id: data.id || null,
-      nickname: data.nickname || null,
-      email: data.email || null,
-      erro: data.error || null,
-      mensagem: data.message || null
+    if (!resposta.ok) {
+      return res.status(resposta.status).json({
+        aprovado: false,
+        erro: "Erro ao consultar pagamento",
+        detalhes: dados
+      });
+    }
+
+    return res.status(200).json({
+      aprovado: dados.status === "approved",
+      pagamento: {
+        id: dados.id,
+        status: dados.status,
+        status_detail: dados.status_detail,
+        valor: dados.transaction_amount,
+        external_reference: dados.external_reference
+      }
     });
 
-  } catch (error) {
+  } catch (erro) {
     return res.status(500).json({
-      erro: error.message
+      aprovado: false,
+      erro: "Erro interno",
+      detalhes: erro.message
     });
   }
 }
