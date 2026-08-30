@@ -1,4 +1,4 @@
-export default async function handler(req, res) {
+deexport default async function handler(req, res) {
   try {
     const token = process.env.MP_ACCESS_TOKEN;
 
@@ -46,9 +46,9 @@ export default async function handler(req, res) {
           },
 
           auto_return: "approved",
-
-          notification_url:
-            "https://maquina-de-centavos-webhook.vercel.app/webhook"
+notification_url:
+  "https://maquina-de-centavos-webhook.vercel.app/api/webhook"
+          
         })
       }
     );
