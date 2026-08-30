@@ -1,4 +1,4 @@
-deexport default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   try {
     const token = process.env.MP_ACCESS_TOKEN;
 
@@ -14,12 +14,10 @@ deexport default async function handler(req, res) {
       "https://api.mercadopago.com/checkout/preferences",
       {
         method: "POST",
-
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`
         },
-
         body: JSON.stringify({
           items: [
             {
@@ -35,20 +33,15 @@ deexport default async function handler(req, res) {
           external_reference: referencia,
 
           back_urls: {
-            success:
-              "https://maquina-de-centavos-webhook.vercel.app/",
-
-            failure:
-              "https://maquina-de-centavos-webhook.vercel.app/",
-
-            pending:
-              "https://maquina-de-centavos-webhook.vercel.app/"
+            success: "https://maquina-de-centavos-webhook.vercel.app/",
+            failure: "https://maquina-de-centavos-webhook.vercel.app/",
+            pending: "https://maquina-de-centavos-webhook.vercel.app/"
           },
 
           auto_return: "approved",
-notification_url:
-  "https://maquina-de-centavos-webhook.vercel.app/api/webhook"
-          
+
+          notification_url:
+            "https://maquina-de-centavos-webhook.vercel.app/api/webhook"
         })
       }
     );
@@ -77,5 +70,5 @@ notification_url:
       detalhes: erro.message
     });
   }
-}
+};
 
